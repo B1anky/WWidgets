@@ -15,6 +15,7 @@
 #include <QDebug>
 #include <QMouseEvent>
 #include <QColor>
+#include <QIcon>
 
 class WPushButton : public QPushButton{
     Q_OBJECT
@@ -23,7 +24,10 @@ class WPushButton : public QPushButton{
     Q_PROPERTY(int    borderSize      READ getBorderSize      WRITE setBorderSize)
 
 public:
-    explicit WPushButton(QPushButton* parent = nullptr);
+    void baseConstructor();
+    WPushButton(QPushButton* parent = nullptr);
+    WPushButton(const QString& text, QWidget* parent = nullptr);
+    WPushButton(const QIcon& icon, const QString& text, QWidget* parent = nullptr);
     ~WPushButton();
 
     QString baseBackground;

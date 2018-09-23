@@ -1,6 +1,18 @@
 #include "WPushButton.h"
 
-WPushButton::WPushButton(QPushButton *parent): QPushButton(parent){
+WPushButton::WPushButton(QPushButton* parent) : QPushButton(parent){
+    baseConstructor();
+}
+
+WPushButton::WPushButton(const QString& text, QWidget* parent) : QPushButton(text, parent){
+    baseConstructor();
+}
+
+WPushButton::WPushButton(const QIcon& icon, const QString& text, QWidget* parent) : QPushButton(icon, text, parent){
+    baseConstructor();
+}
+
+void WPushButton::baseConstructor(){
     setAttribute(Qt::WA_Hover);
     baseStyle = "QPushButton{ border-radius: 0px } QPushButton{ outline: 0px }";
     baseBackground = QString(" QPushButton{ background-color: rgb(226, 226, 226) }");

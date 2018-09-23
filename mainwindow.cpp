@@ -24,8 +24,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent){
     combo->addItem("testing 2");
     layout->addWidget(combo);
 
-    QPointer<WPushButton> wButton = new WPushButton;
-    wButton->setText(tr("I am a WPushButton"));
+    QPointer<WPushButton> wButton = new WPushButton(tr("I am a WPushButton"));
     wButton->setFixedSize(150, 25);
     layout->addWidget(wButton);
 
