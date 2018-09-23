@@ -12,7 +12,10 @@ WPushButton::WPushButton(const QIcon& icon, const QString& text, QWidget* parent
     baseConstructor();
 }
 
+//Sets up all default values
+//Future To-Do: have base constructor take 6 QColors to dynamically update colors of the widget's effects
 void WPushButton::baseConstructor(){
+
     setAttribute(Qt::WA_Hover);
     baseStyle = "QPushButton{ border-radius: 0px } QPushButton{ outline: 0px }";
     baseBackground = QString(" QPushButton{ background-color: rgb(226, 226, 226) }");
@@ -24,6 +27,7 @@ void WPushButton::baseConstructor(){
     windowsFont.setPointSize(8);
     this->setFont(windowsFont);
 
+    //All of the colors for the different actions
     backgroundDefaultColor = QColor(226, 226, 226);
     borderDefaultColor =QColor(175, 175, 175);
     backgroundBlueColor = QColor(228, 242, 251);
@@ -55,16 +59,21 @@ void WPushButton::baseConstructor(){
     fadeBackgroundReleased = nullptr;
     fadeBorderReleased = nullptr;
 
+    // These setup functions are called for each event as a sanitation check.
+    // Better logic will prevent this in the future from being needed to be called repeatedly.
     setupHoverEnterAnimation();
     setupHoverLeaveAnimation();
     setupClickPressedAnimation();
     setupClickReleasedAnimation();
     setupFocusInAnimation();
     setupFocusOutAnimation();
+
 }
 
+// Cleans up all animations, although they don't currently leak, may not need explicit destructor because
+// 'this' is used as constructor arguments and the natural release of all children clean it up
 WPushButton::~WPushButton(){
-
+/*
     if(groupFadeBlue){
         delete groupFadeBlue;
     }
@@ -120,38 +129,51 @@ WPushButton::~WPushButton(){
     if(fadeBorderReleased){
         delete fadeBorderReleased;
     }
-
+*/
 }
 
+// Handles smoothly transitioning the Background color of the style sheet
 void WPushButton::setBackgroundColor (QColor backgroundColor){
     backgroundStyle = baseStyle + QString("QPushButton{ background-color: rgb(%1, %2, %3) }").arg(backgroundColor.red()).arg(backgroundColor.green()).arg(backgroundColor.blue());
     currentBackgroundColor = backgroundColor;
 }
 
+// Getter is not really needed for now, needed by Q_PROPERTY register even if unused
 QColor WPushButton::getBackgroundColor(){
-    return Qt::black; // getter is not really needed for now
+    return Qt::black;
 }
 
+//Controls the style sheet of background and border attributes
 void WPushButton::setBorderColor(QColor borderColor){
-    fullStyle = backgroundStyle +  QString("QPushButton{ border-style: solid } QPushButton{ border-color:  rgb(%1, %2, %3) }").arg(borderColor.red()).arg(borderColor.green()).arg(borderColor.blue());
+
+    fullStyle = baseStyle + backgroundStyle +  QString("QPushButton{ border-style: solid } QPushButton{ border-color:  rgb(%1, %2, %3) }").arg(borderColor.red()).arg(borderColor.green()).arg(borderColor.blue());
     currentBorderColor = borderColor;
     fullStyle += QString("QPushButton{ border-width: %1px}").arg(currentBorderSize);
+    //A single reset of the style sheet to ensure no two updates are fighting with each other
     this->setStyleSheet(fullStyle);
+
 }
 
+// Getter is not really needed for now, needed by Q_PROPERTY register even if unused
 QColor WPushButton::getBorderColor(){
-    return Qt::black; // getter is not really needed for now
+    return Qt::black;
 }
 
+// Controls the class' internal size of the border which shows in setBorderColor(QColor ...) on third line of func.
 void WPushButton::setBorderSize(int borderSize){
     currentBorderSize = borderSize;
 }
 
+// Getter is not really needed for now, needed by Q_PROPERTY register even if unused
 int WPushButton::getBorderSize(){
-    return currentBorderSize; // getter is not really needed for now
+    return currentBorderSize;
 }
 
+// When the user is mousing over this
 void WPushButton::hoverEnter(QHoverEvent *event){
+
+    setupHoverEnterAnimation();
+
     QVariant colorBackgroundStart;
     colorBackgroundStart.setValue(currentBackgroundColor);
 
@@ -165,9 +187,10 @@ void WPushButton::hoverEnter(QHoverEvent *event){
         QVariant sizeBorderStart;
         sizeBorderStart.setValue(currentBorderSize);
         decreaseBorderSize->setStartValue(sizeBorderStart);
-        if(groupFadeBlue->indexOfAnimation(decreaseBorderSize) == -1){
-            groupFadeBlue->addAnimation(decreaseBorderSize);
+        if(groupFadeBlue->indexOfAnimation(decreaseBorderSize) != -1){
+            groupFadeBlue->removeAnimation(decreaseBorderSize);
         }
+         groupFadeBlue->addAnimation(decreaseBorderSize);
     }else{
         if(groupFadeBlue->indexOfAnimation(decreaseBorderSize) != -1){
             groupFadeBlue->removeAnimation(decreaseBorderSize);
@@ -177,9 +200,12 @@ void WPushButton::hoverEnter(QHoverEvent *event){
     groupFadeBlue->start();
 
     event->accept();
+
 }
 
+// When the user is no longer mousing over this
 void WPushButton::hoverLeave(QHoverEvent *event){
+
     setupHoverLeaveAnimation();
 
     QVariant colorBackgroundStart;
@@ -212,42 +238,52 @@ void WPushButton::hoverLeave(QHoverEvent *event){
     groupFadeDefault->start();
 
     event->accept();
+
 }
 
+// When the user is holding left click on this
 void WPushButton::mousePressEvent(QMouseEvent *event){
-    setupClickPressedAnimation();
 
-    QVariant colorBackgroundStart;
-    colorBackgroundStart.setValue(currentBackgroundColor);
+    if(event->buttons() == Qt::LeftButton){
 
-    QVariant colorBorderStart;
-    colorBorderStart.setValue(currentBorderColor);
-
-    fadeBackgroundClicked->setStartValue(colorBackgroundStart);
-    fadeBorderClicked->setStartValue(colorBorderStart);
-
-    if(this->hasFocus()){
-        QVariant sizeBorderStart;
-        sizeBorderStart.setValue(currentBorderSize);
-        decreaseBorderSize->setStartValue(sizeBorderStart);
-        //Adds the increasing border size animation to the hover leave event when in focus
-        if(groupFadeClicked->indexOfAnimation(decreaseBorderSize) == -1){
-            groupFadeClicked->addAnimation(decreaseBorderSize);
-        }
-    }else{
-        if(groupFadeClicked->indexOfAnimation(decreaseBorderSize) != -1){
-            groupFadeClicked->removeAnimation(decreaseBorderSize);
-        }
-        //Resets groupFadeClicked back to original values
         setupClickPressedAnimation();
+
+        QVariant colorBackgroundStart;
+        colorBackgroundStart.setValue(currentBackgroundColor);
+
+        QVariant colorBorderStart;
+        colorBorderStart.setValue(currentBorderColor);
+
+        fadeBackgroundClicked->setStartValue(colorBackgroundStart);
+        fadeBorderClicked->setStartValue(colorBorderStart);
+
+        if(this->hasFocus()){
+            QVariant sizeBorderStart;
+            sizeBorderStart.setValue(currentBorderSize);
+            decreaseBorderSize->setStartValue(sizeBorderStart);
+            //Adds the increasing border size animation to the hover leave event when in focus
+            if(groupFadeClicked->indexOfAnimation(decreaseBorderSize) == -1){
+                groupFadeClicked->addAnimation(decreaseBorderSize);
+            }
+        }else{
+            if(groupFadeClicked->indexOfAnimation(decreaseBorderSize) != -1){
+                groupFadeClicked->removeAnimation(decreaseBorderSize);
+            }
+            //Resets groupFadeClicked back to original values
+            setupClickPressedAnimation();
+        }
+
+        groupFadeClicked->start();
+
     }
 
-    groupFadeClicked->start();
-
     QPushButton::mousePressEvent(event);
+
 }
 
+// When the user is done holding left click on this
 void WPushButton::mouseReleaseEvent(QMouseEvent *event){
+
     setupClickReleasedAnimation();
 
     QVariant colorBackgroundStart;
@@ -265,7 +301,9 @@ void WPushButton::mouseReleaseEvent(QMouseEvent *event){
 
 }
 
+// When the user tabs into focus on the widget/clicks this widget
 void WPushButton::focusIn(QFocusEvent *event){
+
     setupFocusInAnimation();
 
     QVariant sizeBorderStart;
@@ -284,9 +322,12 @@ void WPushButton::focusIn(QFocusEvent *event){
     }
 
     QPushButton::focusInEvent(event);
+
 }
 
+// When the user clicks another widget/window or hits tab when another widget is present in the window to tab to
 void WPushButton::focusOut(QFocusEvent *event){
+
     setupFocusOutAnimation();
 
     QVariant colorBorderStart;
@@ -315,10 +356,12 @@ void WPushButton::focusOut(QFocusEvent *event){
     }
 
     QPushButton::focusOutEvent(event);
+
 }
 
-
+// Event handler for the different QEvents to pass to their respective function
 bool WPushButton::event(QEvent* e){
+
     switch(e->type()){
         case QEvent::HoverEnter:
             hoverEnter(static_cast<QHoverEvent*>(e));
@@ -339,10 +382,15 @@ bool WPushButton::event(QEvent* e){
         default:
             break;
     }
+
     return QWidget::event(e);
+
 }
 
+// All following functions setup start values to default values and resets animations groups
+
 void WPushButton::setupHoverEnterAnimation(){
+
     QByteArray backgroundColorArr = {"backgroundColor"};
     QByteArray borderColorArr = {"borderColor"};
 
@@ -369,11 +417,18 @@ void WPushButton::setupHoverEnterAnimation(){
     fadeBackgroundBlue->setEndValue(colorBackgroundEnd);
     fadeBorderBlue->setEndValue(colorBorderEnd);
 
+    if(groupFadeBlue->indexOfAnimation(fadeBackgroundBlue) != -1)
+        groupFadeBlue->removeAnimation(fadeBackgroundBlue);
+    if(groupFadeBlue->indexOfAnimation(fadeBorderBlue) != -1)
+        groupFadeBlue->removeAnimation(fadeBorderBlue);
+
     groupFadeBlue->addAnimation(fadeBackgroundBlue);
     groupFadeBlue->addAnimation(fadeBorderBlue);
+
 }
 
 void WPushButton::setupHoverLeaveAnimation(){
+
     QByteArray backgroundColorArr = {"backgroundColor"};
     QByteArray borderColorArr = {"borderColor"};
 
@@ -400,11 +455,18 @@ void WPushButton::setupHoverLeaveAnimation(){
     fadeBackgroundDefault->setEndValue(colorBackgroundEnd);
     fadeBorderDefault->setEndValue(colorBorderEnd);
 
+    if(groupFadeDefault->indexOfAnimation(fadeBackgroundDefault) != -1)
+        groupFadeDefault->removeAnimation(fadeBackgroundDefault);
+    if(groupFadeDefault->indexOfAnimation(fadeBorderDefault) != -1)
+        groupFadeDefault->removeAnimation(fadeBorderDefault);
+
     groupFadeDefault->addAnimation(fadeBackgroundDefault);
     groupFadeDefault->addAnimation(fadeBorderDefault);
+
 }
 
 void WPushButton::setupFocusInAnimation(){
+
     QByteArray borderSizeArr = {"borderSize"};
 
     if(!increaseBorderSize){
@@ -420,6 +482,7 @@ void WPushButton::setupFocusInAnimation(){
 }
 
 void WPushButton::setupFocusOutAnimation(){
+
     QByteArray borderSizeArr = {"borderSize"};
 
     if(!decreaseBorderSize){
@@ -431,9 +494,11 @@ void WPushButton::setupFocusOutAnimation(){
     sizeBorderEnd.setValue(1);
 
     decreaseBorderSize->setEndValue(sizeBorderEnd);
+
 }
 
 void WPushButton::setupClickPressedAnimation(){
+
     QByteArray backgroundColorArr = {"backgroundColor"};
     QByteArray borderColorArr = {"borderColor"};
 
@@ -460,12 +525,21 @@ void WPushButton::setupClickPressedAnimation(){
     fadeBackgroundClicked->setEndValue(colorBackgroundEnd);
     fadeBorderClicked->setEndValue(colorBorderEnd);
 
+    if(groupFadeClicked->indexOfAnimation(fadeBackgroundClicked) != -1)
+        groupFadeClicked->removeAnimation(fadeBackgroundClicked);
+    if(groupFadeClicked->indexOfAnimation(fadeBorderClicked) != -1)
+        groupFadeClicked->removeAnimation(fadeBorderClicked);
+
+    fadeBackgroundClicked->setEasingCurve(QEasingCurve::OutQuart);
+
     groupFadeClicked->addAnimation(fadeBackgroundClicked);
     groupFadeClicked->addAnimation(fadeBorderClicked);
+
 
 }
 
 void WPushButton::setupClickReleasedAnimation(){
+
     QByteArray backgroundColorArr = {"backgroundColor"};
     QByteArray borderColorArr = {"borderColor"};
 
@@ -492,6 +566,13 @@ void WPushButton::setupClickReleasedAnimation(){
     fadeBackgroundReleased->setEndValue(colorBackgroundEnd);
 
     fadeBorderReleased->setEndValue(colorBorderEnd);
+
+    if(groupFadeReleased->indexOfAnimation(fadeBackgroundReleased) != -1)
+        groupFadeReleased->removeAnimation(fadeBackgroundReleased);
+    if(groupFadeReleased->indexOfAnimation(fadeBorderReleased) != -1)
+        groupFadeReleased->removeAnimation(fadeBorderReleased);
+
+    fadeBackgroundReleased->setEasingCurve(QEasingCurve::OutQuart);
 
     groupFadeReleased->addAnimation(fadeBackgroundReleased);
     groupFadeReleased->addAnimation(fadeBorderReleased);
